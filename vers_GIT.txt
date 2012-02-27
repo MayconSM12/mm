@@ -1,0 +1,160 @@
+Evolução de Versionamento de Código: GIT
+
+por AkitaOnRails 
+
+Uma coisa que não é mais sequer discutível é: todo projeto de software, independente do tamanho, precisa de um sistema de versionamento de código. Isso é imperativo. Mesmo com apenas um desenvolvedor, controlar as revisões, versões e modificações no projeto não é algo que se possa considerar opcional.
+
+O problema seguinte é: qual sistema de versionamento? A maioria dos desenvolvedores hoje está acostumado com CVS, Subversion ou mesmo Microsoft SourceSafe. Eles ajudam, com certeza, mas felizmente hoje sabemos que é possível fazer muito melhor, na realidade, ordens de grandeza melhor.
+
+Linus Torvalds, o pai da kernel Linux, tinha esse problema: como controlar as colaborações de código vindas de centenas de programadores ao redor do mundo? No começo o controle era essencialmente manual, com pedaços de código sendo inseridos e testados manualmente. É um sistema altamente trabalhoso e que com o tempo tende a ser impossível. Logo no começo ele decidiu que não usaria nem CVS, nem Subversion. Resolveu optar por BitKeeper, um sistema essencialmente diferente por ser DISTRIBUÍDO. Essa é a palavra-chave. Mas nem ele era perfeito (além de ser comercial, o que irritou muitos da comunidade). Por isso, Linus olhou novamente o mercado e, na opinião dele, não havia nenhuma opção aceitável, portanto ele mesmo resolveu desenvolver seu próprio sistema de versionamento distribuído, de onde nasceu o GIT.
+
+Não perca nosso WebCast no dia 7 de novembro, onde pretendo dar um resumo sobre as funcionalidades do GIT.
+
+
+Futuro: Sistemas Distribuídos
+
+Sistemas de Versionamento Distribuídos (DVCS) sao muito diferentes de Sistemas Centralizados. Num fluxo de trabalho normal centralizado, cada desenvolvedor tem em sua máquina apenas a última revisão do projeto. Todo o resto, o histórico, fica armazenado num servidor central. Qualquer operação de atualização precisa necessariamente ocorrer via rede, portanto você só pode trabalhar se estiver conectado na sua rede local da empresa ou via internet. Ninguém pode gravar nada no servidor sem autorização, o que torna a colaboração em projetos open source muito mais complicada.
+
+Com Sistemas Distribuídos, cada desenvolvedor tem em sua máquina local um clone completo do repositório original. No caso do Git, o repositório é extremamente otimizado. Por exemplo, a última revisão de código do Ruby on Rails tem cerca de 25Mb, já o repositório com todo o código, atualizações e modificações feita desde 2004, consome pouco mais de 20Mb.
+
+Mais do que isso, como o repositório está todo local, o desenvolvedor não tem nenhum problema de permissão de escrita: está tudo local na máquina dele. Isso dá outra possibilidade: trabalhar totalmente offline, sem rede nem internet.
+
+Como cada desenvolvedor tem o repositório inteiro em sua máquina, o que se chamaria de “servidor central” é apenas um dos clones que é elegido como “principal”, mas qualquer um pode preencher esse papel. Se eventualmente o “servidor” sofrer uma perda irreversível, não há problema: a natureza distribuída garante que qualquer um dos repositórios clonados possa ser eleita como “principal” e o fluxo nunca é quebrado.
+
+Sobre colaboração, é inclusive possível que sub-equipes se formem para trabalhar numa determinada parte do projeto e só quando estiver pronto, mesclar as novidades com o repositório “principal”, de onde todos os outros podem puxar as atualizações. Isso flexibiliza muito a organização do trabalho.
+
+No Git, trabalhar com “branches” é algo trivial e corriqueiro, sendo inclusive motivado. Isso facilita que os desenvolvedores trabalhem em partes diferentes do projeto, ao mesmo tempo. O desenvolvedor tem muito mais flexibilidade para organizar seu próprio trabalho.
+
+Tudo isso se traduz em maior produtividade, maior segurança – já que não existe ponto único de falha, e uma consequência para equipes ágeis é também mais possibilidades de código de mais qualidade.
+
+Aliás, é exatamente por ser descentralizada que a Internet pode existir: se fosse centralizada ela jamais escalaria até este ponto. Redes descentralizadas como a Internet são resistentes a falhas aleatórias e podem aumentar quase infinitamente.
+
+Usando Git
+
+Aprenda um pouco mais sobre Git no blog AkitaOnRails.
+
+Os planos de Hospedagem Compartilhada Linux da Locaweb suportam GIT faz meses. Diferente de Subversion ou CVS, não é necessário instalar servidores à parte ou configurar nada extra, sequer um ambiente web. Tudo pode ser resolvido via SSH.
+
+Para começar, vou assumir que você está usando Linux, Mac ou um ambiente Unix. Vamos criar uma chave SSH e exportá-la para sua conta. Se estiver no Windows, siga estas instruções.
+
+ssh-keygen -t rsa
+
+Esse comando perguntará sobre senha, passphrase, apenas dê Enter para deixar tudo vazio. Isso criará os arquivos ~/.ssh/id_rsa e ~/.ssh/id_rsa.pub
+
+Agora precisamos transferir esse arquivo ao servidor:
+
+scp ~/.ssh/id_rsa.pub seu_login@seu_servidor:~/.ssh/authorized_keys
+
+Pronto, com isso você não precisa mais digitar a senha para fazer login na sua conta via SSH. Toda vez que estiver na sua máquina, o SSH usará o par de chaves criado para fazer a autenticação. Proteja bem sua chave privada em ~/.ssh/id_rsa.
+
+Para criar um novo repositório GIT, faça o seguinte:
+
+ssh seu_login@seu_servidor
+mkdir -p repo/meu_projeto
+cd repo/meu_projeto
+git init
+
+Digite ‘exit’ para voltar à sua máquina local. Agora crie um repositório local de GIT. Para isso escolha o projeto que quer versionar ou apenas crie um novo projeto, como no exemplo:
+
+rails meu_projeto
+cd meu_projeto
+git init
+git add .
+git commit -a -m “Initial Commit”
+
+Agora é só ligar as duas pontas. A partir do diretório do seu projeto, na máquina local, faça o seguinte:
+
+git remote add origin ssh://seu_login@seu_servidor:repo/meu_projeto
+git push origin master
+
+Pronto. Agora seu servidor está com todo o seu código. Você pode usar “git push” toda vez que quiser atualizar o servidor.
+
+Se quiser que outro usuário, em outra máquina, use seu repositório. Crie um novo par de chaves SSH como mostrado acima. Daí faça o seguinte:
+
+scp ~/.ssh/id_rsa.pub seu_login@seu_servidor:~/.ssh
+ssh seu_login@seu_servidor
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+Pronto, isso adicionará uma nova chave à sua conta e permitirá o outro usuário de acessar seu repositório. Para que ele possa começar a colaborar, ele pode fazer, da máquina dele:
+
+git clone ssh://seu_login@seu_servidor:repo/meu_projeto
+
+Isso criará um clone na máquina local dele. Como expliquei, será um clone completo, com todo o histórico desde o primeiro commit feito por você. Ele pode contribuir usando “git push” e ambos podem pegar as atualizações que o outro fez no servidor usando o comando “git pull”.
+
+Usando Branches
+
+O modelo que expliquei acima é apenas uma das formas de colaboração. Novamente, veja este link, para mais detalhes.
+
+A partir do seu projeto, na máquina local, você pode usar o comando “git branch”. Ele mostrará algo assim:
+
+>> git branch
+* master
+
+Ou seja, por padrão, o GIT sempre usa Branches e o primeiro branch criado automaticamente é o master. Inclusive é onde as atualizações vindas do seu repositório remoto vão residir. É uma boa prática sempre fazer seu desenvolvimento em outra branch separada, desta forma:
+
+git checkout -b novo_branch
+
+Feito isso você pode desenvolver normalmente no “novo_branch”. Toda vez que quiser puxar atualizações do servidor faça isto:
+
+git checkout master
+git pull
+git checkout novo_branch
+git rebase master
+
+Isso fará o seguinte:
+
+voltará o branch “master”
+puxará as modificações que foram feitas no repositório remoto para dentro de “master”
+muda de volta ao branch “novo_branch”
+mescla as mudanças vindas do servidor no “novo_branch”
+É possível que, de tempos em tempos, você tenha conflitos (dois desenvolvedores mexeram no mesmo arquivo, exatamente na mesma linha). Nesse caso o comando “git rebase master” acima vai falhar e dizer qual arquivo é o ofensor. Nesse caso você deve abrir esse arquivo e resolver o conflito manualmente, e feito isso faça o seguinte:
+
+git add arquivo_corrigido
+git rebase –continue
+
+Daí o Git continuará o resto das mesclagens. Se ainda assim aparecer outra mensagem de erro sobre o mesmo arquivo, apenas faça “git rebase –skip”. O Git não faz mesclagens usando apenas as últimas revisões dos códigos: ele sabe usar a genealogia do conteúdo do arquivo. Por isso sua heurística de mesclagem é muito mais inteligente.
+
+Toda vez que quiser gravar no seu repositório local alguma modificação para que não se perca, faça commit:
+
+git commit -a -m “descricao deste commit”
+
+Ao contrário do Subversion ou CVS, “commit” não manda nada ao servidor remoto, isso é tarefa do comando “git push”. O commit apenas empacota e grava as últimas modificações de código. É recomendado que se faça isso com bastante frequência para que você nunca perca nada e ainda possa mudar de idéia e voltar commits. Por exemplo, se quiser apagar os últimos 2 commits, por exemplo, faça assim:
+
+git reset –soft HEAD^2
+
+Isso irá desfazer os últimos 2 commits e suas modificações ainda estarão no lugar, daí você pode alterar o que precisar e fazer um novo commit.
+
+Daí, digamos que você terminou o que estava desenvolvendo no “novo_branch”, e quer enviar tudo para o servidor. Sempre faça o processo de rebase como mostrado acima, para garantir que seu “novo_branch” está sincronizado com as últimas atualizações do servidor. Daí faça:
+
+git checkout master
+git merge master
+git push
+git branch -d novo_branch
+
+Esses comandos farão o seguinte:
+
+Volta ao branch “master”
+Mescla todas as mudanças do branch “novo_branch” para o master
+Envia os commits mesclados ao servidor
+Apaga o branch “novo_branch”
+Na realidade existe um processo ainda melhor:
+
+git checkout master
+git merge novo_branch –squash
+git commit -a -m “descricao da nova funcionalidade”
+git push
+git branch -d novo_branch
+
+A diferença é a opção “–squash”. Digamos que no “novo_branch” você tinha 50 commits. Mas você não quer que apareça 50 commits no servidor. Faz mais sentido que o que você fez no “novo_branch” suba como um único commit que engloba uma nova funcionalidade, uma correção de bug ou uma nova documentação, por exemplo, então você pode “esmagar” os 50 commits em apenas 1 para manter tudo limpo e organizado no repositório remoto central.
+
+Feito isso, os outros desenvolvedores com acesso ao repositório central podem fazer “git pull” e receberão suas modificações.
+
+Como podem ver, o Git oferece muitas ferramentas e opções. Aqui acabei de mostrar o topo do iceberg, muito mais pode ser feito. O repositório do Git é muito robusto (ainda nunca ouvi falar de repositórios git corrompidos), muito rápido (roda local e as ferramentas de linha de comando são feitas em C, pelo próprio Linus) e garante a produtividade que você precisa num ambiente ágil.
+
+Instale o Git na sua máquina local (usuários Windows, instalem o msysGit) e aproveitem desde já o suporte a Git que a Locaweb já lhe fornece em suas contas Linux compartilhada. Outro detalhe: não, o Git ainda não tem nenhuma ferramenta visual competente. Por outro lado, o poder do Git só é liberado se o desenvolvedor tiver o conhecimento dos processos explicados acima. Escondê-los não ajudará em nada. Se seu desenvolvedor não conseguir aprender como usar o Git, o problema talvez seja reavaliar as capacidades desse desenvolvedor.
+
+O uso do Git cresceu exponencialmente nos últimos meses. O website GitHub concentra a maioria dos projetos open source em repositórios Git. Ele nasceu há 1 ano e, começando do zero, hoje tem mais de 19 mil projetos em Git. O próprio Ruby on Rails, fora a kernel do Linux, estão em repositórios Git. Mais do que isso, graças à ferramenta git-svn é possível sincronizar (tanto leitura quanto escrita) com repositórios em Subversion, o que permite migração praticamente trivial de Subversion para Git.
+
+Experimente e aprenda esta nova ferramenta. Alguns dos melhores desenvolvedores do mundo e projetos open source já estão migrando para Git. Aumente a produtividade na sua empresa adotando Git.
+
+FONTE: http://blog.locaweb.com.br/tecnologia/evolucao-de-versionamento-de-codigo-git/
